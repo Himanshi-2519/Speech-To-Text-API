@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+// Change VITE_API_BASE_URL to VITE_API_URL to match your Vercel settings
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://speech-to-text-api-u2tn.onrender.com";
+//const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
