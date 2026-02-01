@@ -136,7 +136,7 @@ export default function App() {
     await axios.delete(`${API_BASE_URL}/api/history?email=${email}`);
     setHistory([]);
   };
-
+   
   const downloadTxt = () => {
     const element = document.createElement("a");
     const file = new Blob([transcript], {type: 'text/plain'});
@@ -145,6 +145,17 @@ export default function App() {
     document.body.appendChild(element);
     element.click();
   };
+    const downloadHistoryItem = (text, date) => {
+    const element = document.createElement("a");
+    const file = new Blob([text], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    // This names the file with the date of that specific recording
+    element.download = `transcript-${date.replace(/\//g, '-')}.txt`;
+    //element.download = `transcript-${date}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    };
+
 
   if (!isLoggedIn) {
     return (
@@ -283,11 +294,16 @@ export default function App() {
               {history.map(item => (
                 <div key={item.id} className="p-6 rounded-2xl bg-[#0d1117] border border-white/5 flex flex-col justify-between hover:border-cyan-500/40 transition-all shadow-xl min-h-[150px]">
                   <p className="text-sm text-slate-300 italic leading-relaxed mb-6">"{item.text}"</p>
-                  <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                    <span className="text-[8px] font-mono text-slate-600 uppercase">Created: {new Date(item.created_at).toLocaleDateString()}</span>
-                    <button onClick={() => deleteItem(item.id)} className="text-[8px] text-red-500/50 hover:text-red-500 font-bold uppercase transition-all">Delete</button>
-                  </div>
-                </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                      <span className="text-[8px] font-mono text-slate-600 uppercase">Created: {new Date(item.created_at).toLocaleDateString()}</span>
+                    {/* This div holds  two buttons side-by-side */}
+                    <div className="flex gap-3">
+                      <button onClick={() => downloadHistoryItem(item.text, new Date(item.created_at).toLocaleDateString())} className="text-[8px] text-cyan-500/70 hover:text-cyan-400 font-bold uppercase transition-all">
+                        Download </button>
+                      <button onClick={() => deleteItem(item.id)} className="text-[8px] text-red-500/50 hover:text-red-500 font-bold uppercase transition-all">
+                        Delete</button> </div></div>
+                        </div>
               ))}
               {history.length === 0 && (
                 <div className="col-span-full text-center py-10 opacity-20 text-xs uppercase tracking-widest italic">No history records found</div>
