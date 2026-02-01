@@ -20,7 +20,14 @@ const supabase = createClient(S_URL, S_KEY);
 // Setup Multer for audio files
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('audio/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only audio files are allowed!'), false);
+    }
+  }
 });
 
 app.get('/', (req, res) => {
@@ -57,9 +64,6 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
 
     // Using your exact Deepgram URL and parameters
     const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true&diarize=true&punctuate=true';
-   // This is the "God Mode" URL for rooms with multiple people
-      //const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true&filler_words=true&punctuate=true';
-    //const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true';
       const response = await axios.post(
       deepgramUrl, // Use the variable here
       req.file.buffer,
@@ -72,15 +76,13 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     );
 
     const transcript = response.data.results.channels[0].alternatives[0].transcript;
-    //console.log("AI Detected Text:", transcript);
-
+    
     if (!transcript || transcript.trim().length === 0) {
       return res.json({ transcript: "AI could not process the voice. Try speaking Loudly." });
     }
 
     // Saving to your Supabase table
     await supabase.from('transcriptions').insert([{ text: transcript, email: req.body.email }]);
-    //await supabase.from('transcriptions').insert([{ text: transcript }]);
     res.json({ transcript });
 
   } catch (err) {
