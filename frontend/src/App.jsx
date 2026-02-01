@@ -56,6 +56,7 @@ export default function App() {
   
   const formData = new FormData();
   formData.append('audio', file);
+  formData.append('email', email); // <--- CHANGE THIS: Add this line here
 
   try {
     const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
@@ -74,16 +75,17 @@ export default function App() {
   const toggleRecording = async () => {
   if (!isRecording) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: { ideal: true },
-          noiseSuppression: { ideal: true },
-          autoGainControl: { ideal: true }, 
-          channelCount: 1,
-          sampleRate: 44100
-        } 
-      });
 
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+  audio: {
+    echoCancellation: { ideal: true },
+    noiseSuppression: { ideal: false }, // CHANGED: Set to false to stop the mic from "eating" fast words
+    autoGainControl: { ideal: true }, 
+    channelCount: 1,
+    sampleRate: 48000 // HIGHER QUALITY: Helps capture fast speech details
+  } 
+});
+     
       mediaRecorder.current = new MediaRecorder(stream, { 
         mimeType: 'audio/webm;codecs=opus' 
       });
@@ -113,23 +115,25 @@ export default function App() {
     setIsRecording(false);
   }
 };
-  
-  const fetchHistory = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/history`);
-      setHistory(res.data);
-    } catch (e) { console.error(e); }
-  };
+   const fetchHistory = async () => {
+  try {
+    // We add ?email= to the URL so the backend knows which user is logged in
+    const res = await axios.get(`${API_BASE_URL}/api/history?email=${email}`);
+    setHistory(res.data);
+  } catch (e) { console.error(e); }
+};
 
   const deleteItem = async (id) => {
     if (!window.confirm("Delete record?")) return;
-    await axios.delete(`${API_BASE_URL}/api/history/${id}`);  
+    // UPDATED LINE BELOW: Added ?email=${email}
+    await axios.delete(`${API_BASE_URL}/api/history/${id}?email=${email}`);  
     setHistory(history.filter(item => item.id !== id));
   };
 
   const clearAll = async () => {
     if (!window.confirm("Clear all?")) return;
-    await axios.delete(`${API_BASE_URL}/api/history`);
+    // UPDATED LINE BELOW: Added ?email=${email}
+    await axios.delete(`${API_BASE_URL}/api/history?email=${email}`);
     setHistory([]);
   };
 
