@@ -1,0 +1,3 @@
+const SUPABASE_URL = 'https://madxntaxjjvefacdjorb.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_4B_KKv9fk_SKzavnnklrwA_wUbAA3fY';
+const DEEPGRAM_KEY = 'ebd2c590000115faf5033e59b8113d074c968ca4';

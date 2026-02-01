@@ -1,0 +1,18 @@
+@import "tailwindcss";
+/* Importing the professional heading font */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,900&family=Inter:wght@400;700;900&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  @apply bg-[#05070a] text-slate-200 antialiased;
+  background: radial-gradient(circle at center, #0a0d14 0%, #05070a 100%);
+}
+
+.neon-card {
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(15px);
+}
+
+.dashed-area {
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
