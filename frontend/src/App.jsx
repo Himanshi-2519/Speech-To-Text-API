@@ -171,7 +171,7 @@ export default function App() {
             {isSignup ? "Create Account" : "Welcome to speech to text"}
           </h1>
           <p className="text-cyan-400 text-[10px] font-bold tracking-[0.25em] uppercase mb-12 opacity-90 italic">
-            Capturing the rhythm of your words, instantly.
+            Capturing the Rhythm of your words, instantly.
           </p>
           
           <form onSubmit={handleAuth} className="space-y-4">
@@ -194,7 +194,7 @@ export default function App() {
     <div className="flex flex-col min-h-screen bg-[#05070a] text-white">
       {/* Navbar Fixed at Top */}
       <nav className="h-16 px-10 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#05070a] z-50">
-        <span className="text-cyan-400 text-base font-bold tracking-[0.25em] opacity-90 italic">Decoding voice with AI.</span>   
+        <span className="text-cyan-400 text-base font-bold tracking-[0.25em] opacity-90 italic">Real-time speech intelligence at your fingertips.</span>   
         <div className="flex gap-4">
           <button onClick={() => setShowHistory(!showHistory)} className="px-5 py-2 rounded-lg bg-cyan-600 text-white text-[9px] font-black uppercase">History</button>
           <button onClick={() => setIsLoggedIn(false)} className="px-5 py-2 rounded-lg border border-red-900/30 text-red-500 text-[9px] font-bold uppercase hover:bg-red-950/20">Logout</button>
