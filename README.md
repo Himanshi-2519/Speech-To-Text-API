@@ -1,4 +1,6 @@
-# 🎙️ AI Multilingual Speech-to-Text Intelligence
+〔 Ⱨ 〕 Speech-to-Text AI Lab
+ "Capturing the Rhythm of your words. Real-time AI transcription with a beautiful neon interface and secure cloud history.🌟"
+
 
 A professional MERN stack application (using Supabase for PostgreSQL) that converts live audio and uploaded files into high-accuracy text. This project is specifically designed to handle **English, Hindi, and Gujarati** voices using AI-driven language detection.
 
