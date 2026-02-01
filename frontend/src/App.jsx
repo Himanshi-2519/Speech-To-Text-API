@@ -173,10 +173,14 @@ export default function App() {
           <p className="text-cyan-400 text-[10px] font-bold tracking-[0.25em] uppercase mb-12 opacity-90 italic">
             Capturing the Rhythm of your words, instantly.
           </p>
+
+      
           
           <form onSubmit={handleAuth} className="space-y-4">
-            <input type="email" placeholder="Email" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setEmail(e.target.value)} />
-            <input type="password" placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />
+            <input type="email" value={email} placeholder="Email" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setEmail(e.target.value)} />
+            <input type="password" value={password} placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />
+            {/*<input type="email" placeholder="Email" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setEmail(e.target.value)} />
+            <input type="password" placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />*/}
             <button type="submit" className="w-full bg-cyan-600 text-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px]">
               {isSignup ? "Sign Up" : "Login"}
             </button>
@@ -197,7 +201,14 @@ export default function App() {
         <span className="text-cyan-400 text-base font-bold tracking-[0.25em] opacity-90 italic">Real-time speech intelligence at your fingertips.</span>   
         <div className="flex gap-4">
           <button onClick={() => setShowHistory(!showHistory)} className="px-5 py-2 rounded-lg bg-cyan-600 text-white text-[9px] font-black uppercase">History</button>
-          <button onClick={() => setIsLoggedIn(false)} className="px-5 py-2 rounded-lg border border-red-900/30 text-red-500 text-[9px] font-bold uppercase hover:bg-red-950/20">Logout</button>
+          {/* Search for your Logout button near the top of the return block */}
+            <button onClick={() => {setIsLoggedIn(false); // Log the user out
+                setEmail("");         // Clear the email state
+                setPassword("");      // Clear the password state
+                }} 
+                className="px-5 py-2 rounded-lg border border-red-900/30 text-red-500 text-[9px] font-bold uppercase hover:bg-red-950/20"> Logout
+            </button>
+          {/*<button onClick={() => setIsLoggedIn(false)} className="px-5 py-2 rounded-lg border border-red-900/30 text-red-500 text-[9px] font-bold uppercase hover:bg-red-950/20">Logout</button>*/}
         </div>
       </nav>
 
