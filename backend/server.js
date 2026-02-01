@@ -56,7 +56,10 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No audio file uploaded" });
 
     // Using your exact Deepgram URL and parameters
-    const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true';
+    const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true&diarize=true&punctuate=true';
+   // This is the "God Mode" URL for rooms with multiple people
+      //const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&diarize=true&filler_words=true&punctuate=true';
+    //const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true';
       const response = await axios.post(
       deepgramUrl, // Use the variable here
       req.file.buffer,
@@ -72,11 +75,12 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     //console.log("AI Detected Text:", transcript);
 
     if (!transcript || transcript.trim().length === 0) {
-      return res.json({ transcript: "AI could not process the voice. Try speaking slowly." });
+      return res.json({ transcript: "AI could not process the voice. Try speaking Loudly." });
     }
 
     // Saving to your Supabase table
-    await supabase.from('transcriptions').insert([{ text: transcript }]);
+    await supabase.from('transcriptions').insert([{ text: transcript, email: req.body.email }]);
+    //await supabase.from('transcriptions').insert([{ text: transcript }]);
     res.json({ transcript });
 
   } catch (err) {
@@ -87,18 +91,34 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
 
 // --- HISTORY ROUTES (Kept exactly as you had them) ---
 app.get('/api/history', async (req, res) => {
-  const { data } = await supabase.from('transcriptions').select('*').order('created_at', { ascending: false });
-  res.json(data || []);
+  const { email } = req.query; 
+  const { data, error } = await supabase
+    .from('transcriptions')
+    .select('*')
+    .eq('email', email) // This filters the data and  tells Supabase: "Only give me rows for this email"
+    .order('created_at', { ascending: false }); // Optional: keeps newest on top
+
+  if (error) return res.status(400).json(error);
+  res.json(data);
 });
 
-app.delete('/api/history/:id', async (req, res) => {
-  await supabase.from('transcriptions').delete().eq('id', req.params.id);
-  res.json({ message: "Deleted" });
-});
+    app.delete('/api/history/:id', async (req, res) => {
+    const { email } = req.query; // Catch email from frontend
+    await supabase
+    .from('transcriptions')
+    .delete()
+    .eq('id', req.params.id)
+    .eq('email', email); // Only delete if the owner matches
+      res.json({ message: "Deleted" });
+      });
 
-app.delete('/api/history', async (req, res) => {
-  await supabase.from('transcriptions').delete().neq('id', 0);
-  res.json({ message: "Cleared" });
-});
+      app.delete('/api/history', async (req, res) => {
+      const { email } = req.query;
+      await supabase
+       .from('transcriptions')
+       .delete()
+       .eq('email', email); // ONLY clear records for this specific email
+       res.json({ message: "Cleared" });
+      });
 
 app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
