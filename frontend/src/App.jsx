@@ -17,19 +17,41 @@ export default function App() {
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
 
-  const handleAuth = async (e) => {
+    const handleAuth = async (e) => {
     e.preventDefault();
+    
+    // Get values directly from the form to avoid "Empty State" lag
+    const form = e.target;
+    const emailValue = form.elements[0].value.trim();
+    const passwordValue = form.elements[1].value.trim();
+
+    if (!emailValue || !passwordValue) {
+      alert("Please enter both email and password.");
+      return;
+    }
+
     try {
       const endpoint = isSignup ? 'signup' : 'login';
-      await axios.post(`${API_BASE_URL}/api/${endpoint}`, { email, password });
+      // Send the direct values, not the state variables
+      const res = await axios.post(`${API_BASE_URL}/api/${endpoint}`, { 
+        email: emailValue, 
+        password: passwordValue 
+      });
+
       if (isSignup) {
         alert("✨ Account created! Now you can Login.");
         setIsSignup(false);
       } else {
+        // Only set state AFTER the server confirms success
+        setEmail(emailValue);
         setIsLoggedIn(true);
-        fetchHistory();
+        // Pass email directly to history so it doesn't wait for state
+        fetchHistory(emailValue); 
       }
-    } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
+    } catch (err) { 
+      console.error("Login Error:", err.response?.data);
+      alert(err.response?.data?.error || "Auth Failed - Check credentials"); 
+    }
   };
 
 
@@ -129,13 +151,18 @@ export default function App() {
   };
 
   //- For History 
-   const fetchHistory = async () => {
-  try {
-    // We add ?email= to the URL so the backend knows which user is logged in
-    const res = await axios.get(`${API_BASE_URL}/api/history?email=${email}`);
-    setHistory(res.data);
-  } catch (e) { console.error(e); }
-};
+  const fetchHistory = async (userEmail) => {
+    // Use the email passed in, or fallback to state
+    const targetEmail = userEmail || email;
+    if (!targetEmail) return;
+
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/history?email=${targetEmail}`);
+      setHistory(res.data);
+    } catch (e) { 
+      console.error("History Error:", e); 
+    }
+  };
 
   const deleteItem = async (id) => {
     if (!window.confirm("Delete record?")) return;
