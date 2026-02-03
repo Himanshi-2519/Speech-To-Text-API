@@ -16,21 +16,36 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
+  const [authLoading, setAuthLoading] = useState(false);
 
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    try {
-      const endpoint = isSignup ? 'signup' : 'login';
-      await axios.post(`${API_BASE_URL}/api/${endpoint}`, { email, password });
-      if (isSignup) {
-        alert("✨ Account created! Now you can Login.");
-        setIsSignup(false);
-      } else {
-        setIsLoggedIn(true);
-        fetchHistory();
-      }
-    } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
-  };
+    const handleAuth = async (e) => {
+  e.preventDefault();
+  setAuthLoading(true); // Start loading
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPassword = password.trim();
+
+  try {
+    const endpoint = isSignup ? 'signup' : 'login';
+    await axios.post(`${API_BASE_URL}/api/${endpoint}`, { 
+      email: cleanEmail, 
+      password: cleanPassword 
+    });
+
+    if (isSignup) {
+      alert("✨ Account created! Now you can Login.");
+      setIsSignup(false);
+      setPassword(""); 
+    } else {
+      setIsLoggedIn(true);
+      fetchHistory();
+    }
+  } catch (err) { 
+    alert(err.response?.data?.error || "Auth Failed - Check credentials"); 
+  } finally {
+    setAuthLoading(false); // Stop loading regardless of success/fail
+  }
+};
     //--handle audio 
    // --- Handle audio processing (uploads + mic) ---
 const handleAudioProcessing = async (file) => {
@@ -199,9 +214,10 @@ const toggleRecording = async () => {
             <input type="password" value={password} placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />
             {/*<input type="email" placeholder="Email" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setEmail(e.target.value)} />
             <input type="password" placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />*/}
-            <button type="submit" className="w-full bg-cyan-600 text-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px]">
-              {isSignup ? "Sign Up" : "Login"}
-            </button>
+            <button  type="submit" disabled={authLoading}className={`w-full bg-cyan-600 text-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] ${authLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+              {authLoading ? "Authenticating..." : (isSignup ? "Sign Up" : "Login")}
+              </button>
+            
           </form>
 
           <button onClick={() => setIsSignup(!isSignup)} className="mt-8 text-[9px] text-slate-500 hover:text-white uppercase font-bold tracking-widest transition-colors">
