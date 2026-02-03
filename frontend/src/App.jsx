@@ -16,51 +16,37 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
-  const [authLoading, setAuthLoading] = useState(false);
 
-    const handleAuth = async (e) => {
-  e.preventDefault();
-  setAuthLoading(true); // Start loading
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    try {
+      const endpoint = isSignup ? 'signup' : 'login';
+      await axios.post(`${API_BASE_URL}/api/${endpoint}`, { email, password });
+      if (isSignup) {
+        alert("✨ Account created! Now you can Login.");
+        setIsSignup(false);
+      } else {
+        setIsLoggedIn(true);
+        fetchHistory();
+      }
+    } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
+  };
 
-  const cleanEmail = email.trim().toLowerCase();
-  const cleanPassword = password.trim();
 
-  try {
-    const endpoint = isSignup ? 'signup' : 'login';
-    await axios.post(`${API_BASE_URL}/api/${endpoint}`, { 
-      email: cleanEmail, 
-      password: cleanPassword 
-    });
-
-    if (isSignup) {
-      alert("✨ Account created! Now you can Login.");
-      setIsSignup(false);
-      setPassword(""); 
-    } else {
-      setIsLoggedIn(true);
-      fetchHistory();
-    }
-  } catch (err) { 
-    alert(err.response?.data?.error || "Auth Failed - Check credentials"); 
-  } finally {
-    setAuthLoading(false); // Stop loading regardless of success/fail
-  }
-};
-    //--handle audio 
-   // --- Handle audio processing (uploads + mic) ---
-const handleAudioProcessing = async (file) => {
+  const handleAudioProcessing = async (file) => {
   if (!file) return;
 
-  console.log("Processing file:", file.name, file.type, file.size);
-
-  // Accept only audio files
-  if (file.type && !file.type.startsWith("audio/")) {
-    setTranscript("");
+  // Day 9: Comprehensive validation for file types
+  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a'];
+  
+  if (!allowedTypes.includes(file.type)) {
+    setTranscript(""); // Clear any old transcript
     setLoading(false);
-    alert("❌ Invalid File Type: Please upload an audio file.");
+    alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
     return;
   }
 
+  // Day 9: File size validation (Example: limit to 10MB)
   if (file.size > 10 * 1024 * 1024) {
     setLoading(false);
     alert("❌ File too large: Maximum size is 10MB.");
@@ -69,72 +55,78 @@ const handleAudioProcessing = async (file) => {
 
   setLoading(true);
   setTranscript("Processing file..."); 
-
+  
   const formData = new FormData();
   formData.append('audio', file);
-  formData.append('email', email);
+  formData.append('email', email); // <--- CHANGE THIS: Add this line here
 
   try {
     const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
     setTranscript(res.data.transcript);
     fetchHistory();
   } catch (e) {
+    // Day 9: Detailed Error Messages based on failure type
     const errorMsg = e.response?.data?.error || "AI could not process this file.";
     setTranscript(`Error: ${errorMsg}`);
     console.error("Transcription Error:", e);
   } finally {
     setLoading(false);
-    setIsRecording(false);
+    setIsRecording(false); 
   }
 };
 
-// --- Mic recording toggle ---
-const toggleRecording = async () => {
-  if (!isRecording) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      //-- for mic 
+    const toggleRecording = async () => {
+    if (!isRecording) {
+      try {
+        // 1. Get high-quality audio stream
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: { ideal: true },
+            noiseSuppression: { ideal: false }, 
+            autoGainControl: { ideal: true }, 
+            channelCount: 1,
+            sampleRate: 48000 
+          } 
+        });
 
-      // Choose supported MIME type
-      let options = { mimeType: 'audio/webm' };
-      if (!MediaRecorder.isTypeSupported(options.mimeType)) options = {};
+        // 2. Initialize MediaRecorder
+        mediaRecorder.current = new MediaRecorder(stream, { 
+          mimeType: 'audio/webm;codecs=opus' 
+        });
+        chunks.current = [];
 
-      mediaRecorder.current = new MediaRecorder(stream, options);
-      chunks.current = [];
+        // 3. Collect data as you speak (CRITICAL FOR LAPTOP STABILITY)
+        mediaRecorder.current.ondataavailable = (e) => { 
+          if (e.data.size > 0) {
+            chunks.current.push(e.data); 
+          }
+        };
 
-      mediaRecorder.current.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.current.push(e.data);
-      };
+        // 4. Handle stopping the recording
+        mediaRecorder.current.onstop = () => {
+          const blob = new Blob(chunks.current, { type: 'audio/webm' });
+          // Turn off the microphone hardware immediately after recording
+          stream.getTracks().forEach(track => track.stop()); 
+          handleAudioProcessing(blob);
+        };
 
-      mediaRecorder.current.onstop = async () => {
-        // Create file with correct type (webm or whatever browser used)
-        const blob = new Blob(chunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
-        const fileExt = blob.type.includes('wav') ? 'wav' : 'webm';
-        const file = new File([blob], `speech.${fileExt}`, { type: blob.type });
+        // 5. Start with 1-second time slices (Enables recording on all browsers)
+        mediaRecorder.current.start(1000); 
+        setIsRecording(true);
 
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-
-        console.log("Recording finished:");
-        console.log("File name:", file.name);
-        console.log("File type:", file.type);
-        console.log("Blob size:", blob.size);
-
-        await handleAudioProcessing(file);
-      };
-
-      mediaRecorder.current.start();
-      setIsRecording(true);
-
-    } catch (err) {
-      console.error('Mic Error:', err);
-      alert('Mic permission denied or unavailable.');
+      } catch (err) { 
+        console.error("Mic Error:", err);
+        alert("Mic error: Please check permissions or hardware. Ensure the page has microphone access."); 
+      }
+    } else {
+      // 6. Stop the recording if it is active
+      if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
+        mediaRecorder.current.stop();
+      }
+      setIsRecording(false);
     }
-  } else {
-    mediaRecorder.current?.stop();
-    setIsRecording(false);
-  }
-};
-
+  };
 
   //- For History 
    const fetchHistory = async () => {
@@ -214,10 +206,9 @@ const toggleRecording = async () => {
             <input type="password" value={password} placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />
             {/*<input type="email" placeholder="Email" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setEmail(e.target.value)} />
             <input type="password" placeholder="Password" className="w-full bg-[#05070a] border border-white/10 p-4 rounded-xl text-xs text-white outline-none focus:border-cyan-500" onChange={(e) => setPassword(e.target.value)} />*/}
-            <button  type="submit" disabled={authLoading}className={`w-full bg-cyan-600 text-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px] ${authLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-              {authLoading ? "Authenticating..." : (isSignup ? "Sign Up" : "Login")}
-              </button>
-            
+            <button type="submit" className="w-full bg-cyan-600 text-white font-black py-4 rounded-xl uppercase tracking-widest text-[10px]">
+              {isSignup ? "Sign Up" : "Login"}
+            </button>
           </form>
 
           <button onClick={() => setIsSignup(!isSignup)} className="mt-8 text-[9px] text-slate-500 hover:text-white uppercase font-bold tracking-widest transition-colors">
@@ -327,7 +318,7 @@ const toggleRecording = async () => {
                       <button onClick={() => deleteItem(item.id)} className="text-[8px] text-red-500/50 hover:text-red-500 font-bold uppercase transition-all">
                         Delete</button> </div></div>
                         </div>
-              ))} 
+              ))}
               {history.length === 0 && (
                 <div className="col-span-full text-center py-10 opacity-20 text-xs uppercase tracking-widest italic">No history records found</div>
               )}
