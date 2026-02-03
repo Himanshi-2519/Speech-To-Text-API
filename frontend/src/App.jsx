@@ -37,9 +37,9 @@ export default function App() {
   if (!file) return;
 
   // Day 9: Comprehensive validation for file types
-  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a', 'video/webm'];
+  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a', 'video/webm', ''];
   
-  if (!allowedTypes.includes(file.type)) {
+  if (file.type && !allowedTypes.includes(file.type)) {
     setTranscript(""); // Clear any old transcript
     setLoading(false);
     alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
@@ -98,14 +98,14 @@ export default function App() {
             chunks.current.push(e.data); 
           }
         };
-
-        mediaRecorder.current.onstop = () => {
-          // IMPROVEMENT: Explicitly set codec for better AI compatibility
-          const blob = new Blob(chunks.current, { type: 'audio/webm;codecs=opus' });
+        
+          mediaRecorder.current.onstop = () => {
+         // Use 'audio/webm' here to tell the browser to treat it as audio
+         const blob = new Blob(chunks.current, { type: 'audio/webm;codecs=opus' });
           stream.getTracks().forEach(track => track.stop()); 
           handleAudioProcessing(blob);
-        };
-
+          };
+        
         mediaRecorder.current.start(1000); 
         setIsRecording(true);
 
