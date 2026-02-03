@@ -33,21 +33,18 @@ export default function App() {
   };
     //--handle audio 
     const handleAudioProcessing = async (file) => {
-  if (!file) return;
-        const allowedTypes = [
-  'audio/webm',
-  'audio/wav',
-  'audio/mpeg'
-];
-  
+        
+      if (!file) return;
+      
   // IMPROVED LOGIC: 
   // If the file has a type, and that type isn't in our list, AND it's not a blob (empty type), then block it.
-  if (file.type && !allowedTypes.includes(file.type) && file.type !== "") {
-    setTranscript(""); 
-    setLoading(false);
-    alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
-    return;
-  }
+  // ✅ FIX: allow all audio MIME types (fixes live mic recording)
+      if (file.type && !file.type.startsWith("audio/")) {
+  setTranscript("");
+  setLoading(false);
+  alert("❌ Invalid File Type: Please upload an audio file.");
+  return;
+      }
 
   if (file.size > 10 * 1024 * 1024) {
     setLoading(false);
