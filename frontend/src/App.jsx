@@ -17,12 +17,11 @@ export default function App() {
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
 
-
-    const handleAuth = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
     try {
       const endpoint = isSignup ? 'signup' : 'login';
-      await axios.post(`http://127.0.0.1:5000/api/${endpoint}`, { email, password });
+      await axios.post(`${API_BASE_URL}/api/${endpoint}`, { email, password });
       if (isSignup) {
         alert("✨ Account created! Now you can Login.");
         setIsSignup(false);
@@ -32,83 +31,91 @@ export default function App() {
       }
     } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
   };
-
     //--handle audio 
-    const handleAudioProcessing = async (file) => {
-    if (!file) return;
+   // --- Handle audio processing (uploads + mic) ---
+const handleAudioProcessing = async (file) => {
+  if (!file) return;
 
-    setLoading(true);
-    setTranscript("Processing file..."); 
+  console.log("Processing file:", file.name, file.type, file.size);
 
-    const formData = new FormData();
-    // Change: Go back to the old simple append 
-    formData.append('audio', file);
-    // Keep: The email is needed for your new history feature
-    formData.append('email', email);
+  // Accept only audio files
+  if (file.type && !file.type.startsWith("audio/")) {
+    setTranscript("");
+    setLoading(false);
+    alert("❌ Invalid File Type: Please upload an audio file.");
+    return;
+  }
 
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
-      setTranscript(res.data.transcript);
-      fetchHistory();
-    } catch (e) {
-      setTranscript("Error: AI could not process this file.");
-      console.error(e);
-    } finally {
-      setLoading(false);
-      setIsRecording(false); 
-    }
-  };
+  if (file.size > 10 * 1024 * 1024) {
+    setLoading(false);
+    alert("❌ File too large: Maximum size is 10MB.");
+    return;
+  }
 
-//-- for mic 
-      const toggleRecording = async () => {
+  setLoading(true);
+  setTranscript("Processing file..."); 
+
+  const formData = new FormData();
+  formData.append('audio', file);
+  formData.append('email', email);
+
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
+    setTranscript(res.data.transcript);
+    fetchHistory();
+  } catch (e) {
+    const errorMsg = e.response?.data?.error || "AI could not process this file.";
+    setTranscript(`Error: ${errorMsg}`);
+    console.error("Transcription Error:", e);
+  } finally {
+    setLoading(false);
+    setIsRecording(false);
+  }
+};
+
+// --- Mic recording toggle ---
+const toggleRecording = async () => {
   if (!isRecording) {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true, 
-        } 
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Use webm/opus - this is the "magic" fix for laptops
-      
-      mediaRecorder.current = new MediaRecorder(stream, { 
-        mimeType: 'audio/webm;codecs=opus' 
-      });
-      
+      // Choose supported MIME type
+      let options = { mimeType: 'audio/webm' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) options = {};
+
+      mediaRecorder.current = new MediaRecorder(stream, options);
       chunks.current = [];
 
-      mediaRecorder.current.ondataavailable = (e) => { 
-        if (e.data.size > 0) chunks.current.push(e.data); 
+      mediaRecorder.current.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.current.push(e.data);
       };
 
-      mediaRecorder.current.onstop = () => {
-        // Change: Use a simple Blob without forced MIME types (Matches your old logic)
-        const blob = new Blob(chunks.current); 
-        
-        // Stop the hardware mic tracks
-        stream.getTracks().forEach(track => track.stop()); 
-        
-        // Process the audio
-        handleAudioProcessing(blob);
-        
-        // Change: Clear chunks immediately for the next recording
-        chunks.current = []; 
-      };
-      
+      mediaRecorder.current.onstop = async () => {
+        // Create file with correct type (webm or whatever browser used)
+        const blob = new Blob(chunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
+        const fileExt = blob.type.includes('wav') ? 'wav' : 'webm';
+        const file = new File([blob], `speech.${fileExt}`, { type: blob.type });
 
-      mediaRecorder.current.start(); 
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+
+        console.log("Recording finished:");
+        console.log("File name:", file.name);
+        console.log("File type:", file.type);
+        console.log("Blob size:", blob.size);
+
+        await handleAudioProcessing(file);
+      };
+
+      mediaRecorder.current.start();
       setIsRecording(true);
 
-    } catch (err) { 
-      console.error(err);
-      alert("Mic error: Check permissions."); 
+    } catch (err) {
+      console.error('Mic Error:', err);
+      alert('Mic permission denied or unavailable.');
     }
   } else {
-    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
-      mediaRecorder.current.stop();
-    }
+    mediaRecorder.current?.stop();
     setIsRecording(false);
   }
 };
@@ -304,7 +311,7 @@ export default function App() {
                       <button onClick={() => deleteItem(item.id)} className="text-[8px] text-red-500/50 hover:text-red-500 font-bold uppercase transition-all">
                         Delete</button> </div></div>
                         </div>
-              ))}
+              ))} 
               {history.length === 0 && (
                 <div className="col-span-full text-center py-10 opacity-20 text-xs uppercase tracking-widest italic">No history records found</div>
               )}
