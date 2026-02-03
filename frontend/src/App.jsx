@@ -37,7 +37,7 @@ export default function App() {
   if (!file) return;
 
   // Day 9: Comprehensive validation for file types
-  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a'];
+  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a', 'video/webm'];
   
   if (!allowedTypes.includes(file.type)) {
     setTranscript(""); // Clear any old transcript
@@ -76,51 +76,44 @@ export default function App() {
 };
 
       //-- for mic 
-    const toggleRecording = async () => {
+   const toggleRecording = async () => {
     if (!isRecording) {
       try {
-        // 1. Get high-quality audio stream
+        // IMPROVEMENT: Added high-gain and noise suppression
         const stream = await navigator.mediaDevices.getUserMedia({ 
           audio: {
-            echoCancellation: { ideal: true },
-            noiseSuppression: { ideal: false }, 
-            autoGainControl: { ideal: true }, 
+            echoCancellation: true,
+            noiseSuppression: true, 
+            autoGainControl: true, // Forces the mic to be louder
             channelCount: 1,
             sampleRate: 48000 
           } 
         });
 
-        // 2. Initialize MediaRecorder
-        mediaRecorder.current = new MediaRecorder(stream, { 
-          mimeType: 'audio/webm;codecs=opus' 
-        });
+        mediaRecorder.current = new MediaRecorder(stream);
         chunks.current = [];
 
-        // 3. Collect data as you speak (CRITICAL FOR LAPTOP STABILITY)
         mediaRecorder.current.ondataavailable = (e) => { 
           if (e.data.size > 0) {
             chunks.current.push(e.data); 
           }
         };
 
-        // 4. Handle stopping the recording
         mediaRecorder.current.onstop = () => {
-          const blob = new Blob(chunks.current, { type: 'audio/webm' });
-          // Turn off the microphone hardware immediately after recording
+          // IMPROVEMENT: Explicitly set codec for better AI compatibility
+          const blob = new Blob(chunks.current, { type: 'audio/webm;codecs=opus' });
           stream.getTracks().forEach(track => track.stop()); 
           handleAudioProcessing(blob);
         };
 
-        // 5. Start with 1-second time slices (Enables recording on all browsers)
         mediaRecorder.current.start(1000); 
         setIsRecording(true);
 
       } catch (err) { 
         console.error("Mic Error:", err);
-        alert("Mic error: Please check permissions or hardware. Ensure the page has microphone access."); 
+        alert("Mic error: Please check permissions."); 
       }
     } else {
-      // 6. Stop the recording if it is active
       if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
         mediaRecorder.current.stop();
       }
