@@ -57,7 +57,7 @@ export default function App() {
   
   const formData = new FormData();
   // We specify a filename 'speech.webm' so the backend always knows it's audio
-  formData.append('audio', file, 'speech.webm');
+  formData.append('audio', file);
   formData.append('email', email);
 
   try {
@@ -74,65 +74,47 @@ export default function App() {
   }
 };
       //-- for mic 
-      
-   const toggleRecording = async () => {
-    if (!isRecording) {
-      try {
-        // IMPROVEMENT: Added high-gain and noise suppression
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true, 
-            autoGainControl: true, // Forces the mic to be louder
-            channelCount: 1,
-            sampleRate: 48000 
-          } 
+      const toggleRecording = async () => {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        }
+      });
+
+      mediaRecorder.current = new MediaRecorder(stream);
+      chunks.current = [];
+
+      mediaRecorder.current.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.current.push(e.data);
+      };
+
+      mediaRecorder.current.onstop = async () => {
+        const blob = new Blob(chunks.current);
+        const file = new File([blob], "speech.wav", {
+          type: blob.type || "audio/wav",
         });
 
-      
-        const mimeType = MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : "audio/wav";
+        stream.getTracks().forEach(track => track.stop());
+        await handleAudioProcessing(file);
+      };
 
-        mediaRecorder.current = new MediaRecorder(stream, { mimeType });
-        chunks.current = [];
+      mediaRecorder.current.start();
+      setIsRecording(true);
 
-        mediaRecorder.current.ondataavailable = (e) => { 
-          if (e.data.size > 0) {
-            chunks.current.push(e.data); 
-          }
-        };
-
-          mediaRecorder.current.onstop = async () => {
-              const recordedType = mediaRecorder.current.mimeType || "audio/webm";
-
-const blob = new Blob(chunks.current, { type: recordedType });
-
-const extension = recordedType.includes("wav") ? "wav" : "webm";
-
-const file = new File([blob], `speech.${extension}`, {
-  type: recordedType,
-});
-
-  stream.getTracks().forEach(track => track.stop());
-  await handleAudioProcessing(file);
-};
-        
-          mediaRecorder.current.start();
-          setIsRecording(true);
-
-      } catch (err) { 
-        console.error("Mic Error:", err);
-        alert("Mic error: Please check permissions."); 
-      }
-    } else {
-      if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
-        mediaRecorder.current.stop();
-      }
-      setIsRecording(false);
+    } catch (err) {
+      console.error("Mic Error:", err);
+      alert("Mic permission denied or unavailable.");
     }
-  };
-
+  } else {
+    mediaRecorder.current?.stop();
+    setIsRecording(false);
+  }
+};
   //- For History 
    const fetchHistory = async () => {
   try {
