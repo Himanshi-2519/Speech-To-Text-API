@@ -31,22 +31,24 @@ export default function App() {
       }
     } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
   };
-
-
-  const handleAudioProcessing = async (file) => {
+    //--handle audio 
+    const handleAudioProcessing = async (file) => {
   if (!file) return;
 
-  // Day 9: Comprehensive validation for file types
-  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a', 'video/webm', ''];
+  const allowedTypes = [
+    'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 
+    'audio/x-m4a', 'video/webm', 'audio/mp3', 'audio/webm;codecs=opus'
+  ];
   
-  if (file.type && !allowedTypes.includes(file.type)) {
-    setTranscript(""); // Clear any old transcript
+  // IMPROVED LOGIC: 
+  // If the file has a type, and that type isn't in our list, AND it's not a blob (empty type), then block it.
+  if (file.type && !allowedTypes.includes(file.type) && file.type !== "") {
+    setTranscript(""); 
     setLoading(false);
     alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
     return;
   }
 
-  // Day 9: File size validation (Example: limit to 10MB)
   if (file.size > 10 * 1024 * 1024) {
     setLoading(false);
     alert("❌ File too large: Maximum size is 10MB.");
@@ -57,15 +59,15 @@ export default function App() {
   setTranscript("Processing file..."); 
   
   const formData = new FormData();
-  formData.append('audio', file);
-  formData.append('email', email); // <--- CHANGE THIS: Add this line here
+  // We specify a filename 'speech.webm' so the backend always knows it's audio
+  formData.append('audio', file, 'speech.webm');
+  formData.append('email', email);
 
   try {
     const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
     setTranscript(res.data.transcript);
     fetchHistory();
   } catch (e) {
-    // Day 9: Detailed Error Messages based on failure type
     const errorMsg = e.response?.data?.error || "AI could not process this file.";
     setTranscript(`Error: ${errorMsg}`);
     console.error("Transcription Error:", e);
@@ -74,8 +76,8 @@ export default function App() {
     setIsRecording(false); 
   }
 };
-
       //-- for mic 
+      
    const toggleRecording = async () => {
     if (!isRecording) {
       try {
@@ -98,12 +100,13 @@ export default function App() {
             chunks.current.push(e.data); 
           }
         };
-        
           mediaRecorder.current.onstop = () => {
-         // Use 'audio/webm' here to tell the browser to treat it as audio
-         const blob = new Blob(chunks.current, { type: 'audio/webm;codecs=opus' });
-          stream.getTracks().forEach(track => track.stop()); 
-          handleAudioProcessing(blob);
+          // Use the recorder's actual mimeType if available, otherwise fallback
+          const recordedType = mediaRecorder.current.mimeType || 'audio/webm';
+          const blob = new Blob(chunks.current, { type: recordedType });
+  
+           stream.getTracks().forEach(track => track.stop()); 
+           handleAudioProcessing(blob);
           };
         
         mediaRecorder.current.start(1000); 
