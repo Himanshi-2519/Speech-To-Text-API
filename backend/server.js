@@ -65,15 +65,17 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
     // Using your exact Deepgram URL and parameters
     const deepgramUrl = 'https://api.deepgram.com/v1/listen?model=nova-2&smart_format=true&detect_language=true&diarize=true&punctuate=true';
       const response = await axios.post(
-      deepgramUrl, // Use the variable here
-      req.file.buffer,
-      { 
-        headers: { 
-          'Authorization': `Token ${D_KEY}`, 
-          'Content-Type': req.file.mimetype || 'audio/webm' 
-        } 
-      }
-    );
+  deepgramUrl,
+  req.file.buffer,
+  { 
+    headers: { 
+      'Authorization': `Token ${D_KEY}`, 
+      'Content-Type': req.file.mimetype || 'audio/wav' 
+    } 
+  }
+);
+  
+   
 
     const transcript = response.data.results.channels[0].alternatives[0].transcript;
     
@@ -87,7 +89,7 @@ app.post('/api/transcribe', upload.single('audio'), async (req, res) => {
 
   } catch (err) {
     console.error("Deepgram Error:", err.response?.data || err.message);
-    res.status(500).json({ transcript: "Connection Error: Check Deepgram API Key or Internet." });
+    res.status(500).json({ transcript: "Connection Error", error: err.message });
   }
 });
 
@@ -123,4 +125,7 @@ app.get('/api/history', async (req, res) => {
        res.json({ message: "Cleared" });
       });
 
-app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
+        const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+//app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
