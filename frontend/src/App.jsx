@@ -17,31 +17,20 @@ export default function App() {
   const mediaRecorder = useRef(null);
   const chunks = useRef([]);
 
-    // Inside App.jsx
+
     const handleAuth = async (e) => {
     e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase(); // Removes spaces and fixed caps
-    const cleanPassword = password.trim();
-
     try {
       const endpoint = isSignup ? 'signup' : 'login';
-      const res = await axios.post(`${API_BASE_URL}/api/${endpoint}`, { 
-        email: cleanEmail, 
-        password: cleanPassword 
-      });
-      
+      await axios.post(`http://127.0.0.1:5000/api/${endpoint}`, { email, password });
       if (isSignup) {
         alert("✨ Account created! Now you can Login.");
         setIsSignup(false);
       } else {
         setIsLoggedIn(true);
-        // Pass the email to history to ensure PRIVACY
-        fetchHistory(cleanEmail); 
+        fetchHistory();
       }
-    } catch (err) { 
-      console.error(err);
-      alert(err.response?.data?.error || "Connection Error: Check if Backend is awake."); 
-    }
+    } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
   };
 
     //--handle audio 
