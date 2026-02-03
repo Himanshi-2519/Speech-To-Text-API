@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 // Change VITE_API_BASE_URL to VITE_API_URL to match your Vercel settings
-const API_BASE_URL = import.meta.env.VITE_API_URL || "https://speech-to-text-api-u2tn.onrender.com";
+const API_BASE_URL = "https://speech-to-text-api-u2tn.onrender.com";
+//const API_BASE_URL = import.meta.env.VITE_API_URL || "https://speech-to-text-api-u2tn.onrender.com";
 //const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
 export default function App() {
@@ -31,30 +32,18 @@ export default function App() {
       }
     } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
   };
-    //--handle audio 
-    const handleAudioProcessing = async (file) => {
-        
-      if (!file) return;
-      console.log("Processing file:", file.name, file.type, file.size);
-      if (file.type && !file.type.startsWith("audio/")) {
-  setTranscript("");
-  setLoading(false);
-  alert("❌ Invalid File Type: Please upload an audio file.");
-  return;
-      }
 
-  if (file.size > 10 * 1024 * 1024) {
-    setLoading(false);
-    alert("❌ File too large: Maximum size is 10MB.");
-    return;
-  }
+  
+    //--handle audio 
+      const handleAudioProcessing = async (file) => {
+  if (!file) return;
 
   setLoading(true);
   setTranscript("Processing file..."); 
-  
+
   const formData = new FormData();
-  // We specify a filename 'speech.webm' so the backend always knows it's audio
-  formData.append('audio', file);
+  // Adding 'speech.webm' as the 3rd argument is CRITICAL
+  formData.append('audio', file, 'speech.webm');
   formData.append('email', email);
 
   try {
@@ -62,36 +51,58 @@ export default function App() {
     setTranscript(res.data.transcript);
     fetchHistory();
   } catch (e) {
-    const errorMsg = e.response?.data?.error || "AI could not process this file.";
-    setTranscript(`Error: ${errorMsg}`);
-    console.error("Transcription Error:", e);
+    setTranscript("Error: AI could not process this file.");
+    console.error(e);
   } finally {
     setLoading(false);
     setIsRecording(false); 
   }
 };
-      //-- for mic 
-        const toggleRecording = async () => {
-    if (!isRecording) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder.current = new MediaRecorder(stream);
-        chunks.current = [];
-        mediaRecorder.current.ondataavailable = (e) => { if (e.data.size > 0) chunks.current.push(e.data); };
-        mediaRecorder.current.onstop = () => {
-          const blob = new Blob(chunks.current, { type: 'audio/wav' });
-          stream.getTracks().forEach(track => track.stop()); 
-          handleAudioProcessing(blob);
-        };
-        mediaRecorder.current.start(100); 
-        setIsRecording(true);
-      } catch (err) { alert("Mic error"); }
-    } else {
-      mediaRecorder.current.stop();
-      setIsRecording(false);
-    }
-  };
 
+//-- for mic 
+      const toggleRecording = async () => {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true, 
+        } 
+      });
+
+      // Use webm/opus - this is the "magic" fix for laptops
+      mediaRecorder.current = new MediaRecorder(stream, { 
+        mimeType: 'audio/webm;codecs=opus' 
+      });
+      
+      chunks.current = [];
+
+      mediaRecorder.current.ondataavailable = (e) => { 
+        if (e.data.size > 0) chunks.current.push(e.data); 
+      };
+
+      mediaRecorder.current.onstop = () => {
+        // Create the blob as webm to match the recorder
+        const blob = new Blob(chunks.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop()); 
+        handleAudioProcessing(blob);
+      };
+
+      mediaRecorder.current.start(); 
+      setIsRecording(true);
+
+    } catch (err) { 
+      console.error(err);
+      alert("Mic error: Check permissions."); 
+    }
+  } else {
+    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
+      mediaRecorder.current.stop();
+    }
+    setIsRecording(false);
+  }
+};
 
 
   //- For History 
