@@ -34,11 +34,11 @@ export default function App() {
     //--handle audio 
     const handleAudioProcessing = async (file) => {
   if (!file) return;
-
-  const allowedTypes = [
-    'audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 
-    'audio/x-m4a', 'video/webm', 'audio/mp3', 'audio/webm;codecs=opus'
-  ];
+        const allowedTypes = [
+  'audio/webm',
+  'audio/wav',
+  'audio/mpeg'
+];
   
   // IMPROVED LOGIC: 
   // If the file has a type, and that type isn't in our list, AND it's not a blob (empty type), then block it.
@@ -92,7 +92,12 @@ export default function App() {
           } 
         });
 
-        mediaRecorder.current = new MediaRecorder(stream);
+      
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "audio/wav";
+
+        mediaRecorder.current = new MediaRecorder(stream, { mimeType });
         chunks.current = [];
 
         mediaRecorder.current.ondataavailable = (e) => { 
@@ -100,17 +105,24 @@ export default function App() {
             chunks.current.push(e.data); 
           }
         };
-          mediaRecorder.current.onstop = () => {
-          // Use the recorder's actual mimeType if available, otherwise fallback
-          const recordedType = mediaRecorder.current.mimeType || 'audio/webm';
-          const blob = new Blob(chunks.current, { type: recordedType });
-  
-           stream.getTracks().forEach(track => track.stop()); 
-           handleAudioProcessing(blob);
-          };
+
+          mediaRecorder.current.onstop = async () => {
+              const recordedType = mediaRecorder.current.mimeType || "audio/webm";
+
+const blob = new Blob(chunks.current, { type: recordedType });
+
+const extension = recordedType.includes("wav") ? "wav" : "webm";
+
+const file = new File([blob], `speech.${extension}`, {
+  type: recordedType,
+});
+
+  stream.getTracks().forEach(track => track.stop());
+  await handleAudioProcessing(file);
+};
         
-        mediaRecorder.current.start(1000); 
-        setIsRecording(true);
+          mediaRecorder.current.start();
+          setIsRecording(true);
 
       } catch (err) { 
         console.error("Mic Error:", err);
