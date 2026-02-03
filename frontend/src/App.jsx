@@ -41,12 +41,14 @@ export default function App() {
   
   if (!allowedTypes.includes(file.type)) {
     setTranscript(""); // Clear any old transcript
+    setLoading(false);
     alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
     return;
   }
 
   // Day 9: File size validation (Example: limit to 10MB)
   if (file.size > 10 * 1024 * 1024) {
+    setLoading(false);
     alert("❌ File too large: Maximum size is 10MB.");
     return;
   }
@@ -72,49 +74,61 @@ export default function App() {
     setIsRecording(false); 
   }
 };
-  const toggleRecording = async () => {
-  if (!isRecording) {
-    try {
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-  audio: {
-    echoCancellation: { ideal: true },
-    noiseSuppression: { ideal: false }, // CHANGED: Set to false to stop the mic from "eating" fast words
-    autoGainControl: { ideal: true }, 
-    channelCount: 1,
-    sampleRate: 48000 // HIGHER QUALITY: Helps capture fast speech details
-  } 
-});
-     
-      mediaRecorder.current = new MediaRecorder(stream, { 
-        mimeType: 'audio/webm;codecs=opus' 
-      });
-      chunks.current = [];
+      //-- for mic 
+    const toggleRecording = async () => {
+    if (!isRecording) {
+      try {
+        // 1. Get high-quality audio stream
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: { ideal: true },
+            noiseSuppression: { ideal: false }, 
+            autoGainControl: { ideal: true }, 
+            channelCount: 1,
+            sampleRate: 48000 
+          } 
+        });
 
-      mediaRecorder.current.ondataavailable = (e) => { 
-        if (e.data.size > 0) chunks.current.push(e.data); 
-      };
+        // 2. Initialize MediaRecorder
+        mediaRecorder.current = new MediaRecorder(stream, { 
+          mimeType: 'audio/webm;codecs=opus' 
+        });
+        chunks.current = [];
 
-      mediaRecorder.current.onstop = () => {
-        const blob = new Blob(chunks.current, { type: 'audio/webm' });
-        stream.getTracks().forEach(track => track.stop()); 
-        handleAudioProcessing(blob);
-      };
+        // 3. Collect data as you speak (CRITICAL FOR LAPTOP STABILITY)
+        mediaRecorder.current.ondataavailable = (e) => { 
+          if (e.data.size > 0) {
+            chunks.current.push(e.data); 
+          }
+        };
 
-      mediaRecorder.current.start(); 
-      setIsRecording(true);
+        // 4. Handle stopping the recording
+        mediaRecorder.current.onstop = () => {
+          const blob = new Blob(chunks.current, { type: 'audio/webm' });
+          // Turn off the microphone hardware immediately after recording
+          stream.getTracks().forEach(track => track.stop()); 
+          handleAudioProcessing(blob);
+        };
 
-    } catch (err) { 
-      console.error(err);
-      alert("Mic error: Please check permissions or hardware."); 
+        // 5. Start with 1-second time slices (Enables recording on all browsers)
+        mediaRecorder.current.start(1000); 
+        setIsRecording(true);
+
+      } catch (err) { 
+        console.error("Mic Error:", err);
+        alert("Mic error: Please check permissions or hardware. Ensure the page has microphone access."); 
+      }
+    } else {
+      // 6. Stop the recording if it is active
+      if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
+        mediaRecorder.current.stop();
+      }
+      setIsRecording(false);
     }
-  } else {
-    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
-      mediaRecorder.current.stop();
-    }
-    setIsRecording(false);
-  }
-};
+  };
+
+  //- For History 
    const fetchHistory = async () => {
   try {
     // We add ?email= to the URL so the backend knows which user is logged in
