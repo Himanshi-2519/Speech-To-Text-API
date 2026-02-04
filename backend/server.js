@@ -1,17 +1,23 @@
-const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors'); 
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
 
+// Only try to load dotenv if we are NOT on Render
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const S_URL = process.env.SUPABASE_URL;
 const S_KEY = process.env.SUPABASE_ANON_KEY;
-
-//const S_KEY = process.env.SUPABASE_KEY;
 const D_KEY = process.env.DEEPGRAM_API_KEY;
+
+// Add a check to see if variables are missing
+if (!S_URL || !S_KEY) {
+  console.error("❌ MISSING ERROR: Supabase environment variables are not set!");
+}
+
 
 const app = express();
 app.use(cors()); 
