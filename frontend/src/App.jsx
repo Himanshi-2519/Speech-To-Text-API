@@ -33,96 +33,96 @@ export default function App() {
     } catch (err) { alert(err.response?.data?.error || "Auth Failed"); }
   };
 
+
   const handleAudioProcessing = async (file) => {
-    if (!file) return;
+  if (!file) return;
 
-    // Day 9: Comprehensive validation for file types
-    const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a'];
-    
-    if (!allowedTypes.includes(file.type)) {
-      setTranscript(""); // Clear any old transcript
-      alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
-      return;
-    }
+  // Day 9: Comprehensive validation for file types
+  const allowedTypes = ['audio/mpeg', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/x-m4a'];
+  
+  if (!allowedTypes.includes(file.type)) {
+    setTranscript(""); // Clear any old transcript
+    alert("❌ Invalid File Type: Please upload an audio file (MP3, WAV, WEBM).");
+    return;
+  }
 
-    // Day 9: File size validation (Example: limit to 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("❌ File too large: Maximum size is 10MB.");
-      return;
-    }
+  // Day 9: File size validation (Example: limit to 10MB)
+  if (file.size > 10 * 1024 * 1024) {
+    alert("❌ File too large: Maximum size is 10MB.");
+    return;
+  }
 
-    setLoading(true);
-    setTranscript("Processing file..."); 
-    
-    const formData = new FormData();
-    formData.append('audio', file);
-    formData.append('email', email); // <--- CHANGE THIS: Add this line here
+  setLoading(true);
+  setTranscript("Processing file..."); 
+  
+  const formData = new FormData();
+  formData.append('audio', file);
+  formData.append('email', email); // <--- CHANGE THIS: Add this line here
 
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
-      setTranscript(res.data.transcript);
-      fetchHistory();
-    } catch (e) {
-      // Day 9: Detailed Error Messages based on failure type
-      const errorMsg = e.response?.data?.error || "AI could not process this file.";
-      setTranscript(`Error: ${errorMsg}`);
-      console.error("Transcription Error:", e);
-    } finally {
-      setLoading(false);
-      setIsRecording(false); 
-    }
-  };
-
+  try {
+    const res = await axios.post(`${API_BASE_URL}/api/transcribe`, formData);
+    setTranscript(res.data.transcript);
+    fetchHistory();
+  } catch (e) {
+    // Day 9: Detailed Error Messages based on failure type
+    const errorMsg = e.response?.data?.error || "AI could not process this file.";
+    setTranscript(`Error: ${errorMsg}`);
+    console.error("Transcription Error:", e);
+  } finally {
+    setLoading(false);
+    setIsRecording(false); 
+  }
+};
   const toggleRecording = async () => {
-    if (!isRecording) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: { ideal: true },
-            noiseSuppression: { ideal: false }, // CHANGED: Set to false to stop the mic from "eating" fast words
-            autoGainControl: { ideal: true }, 
-            channelCount: 1,
-            sampleRate: 48000 // HIGHER QUALITY: Helps capture fast speech details
-          } 
-        });
-        
-        mediaRecorder.current = new MediaRecorder(stream, { 
-          mimeType: 'audio/webm;codecs=opus' 
-        });
-        chunks.current = [];
-
-        mediaRecorder.current.ondataavailable = (e) => { 
-          if (e.data.size > 0) chunks.current.push(e.data); 
-        };
-
-        mediaRecorder.current.onstop = () => {
-          const blob = new Blob(chunks.current, { type: 'audio/webm' });
-          stream.getTracks().forEach(track => track.stop()); 
-          handleAudioProcessing(blob);
-        };
-
-        mediaRecorder.current.start(); 
-        setIsRecording(true);
-
-      } catch (err) { 
-        console.error(err);
-        alert("Mic error: Please check permissions or hardware."); 
-      }
-    } else {
-      if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
-        mediaRecorder.current.stop();
-      }
-      setIsRecording(false);
-    }
-  };
-
-  const fetchHistory = async () => {
+  if (!isRecording) {
     try {
-      // We add ?email= to the URL so the backend knows which user is logged in
-      const res = await axios.get(`${API_BASE_URL}/api/history?email=${email}`);
-      setHistory(res.data);
-    } catch (e) { console.error(e); }
-  };
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+  audio: {
+    echoCancellation: { ideal: true },
+    noiseSuppression: { ideal: false }, // CHANGED: Set to false to stop the mic from "eating" fast words
+    autoGainControl: { ideal: true }, 
+    channelCount: 1,
+    sampleRate: 48000 // HIGHER QUALITY: Helps capture fast speech details
+  } 
+});
+      
+      mediaRecorder.current = new MediaRecorder(stream, { 
+        mimeType: 'audio/webm;codecs=opus' 
+      });
+      chunks.current = [];
+
+      mediaRecorder.current.ondataavailable = (e) => { 
+        if (e.data.size > 0) chunks.current.push(e.data); 
+      };
+
+      mediaRecorder.current.onstop = () => {
+        const blob = new Blob(chunks.current, { type: 'audio/webm' });
+        stream.getTracks().forEach(track => track.stop()); 
+        handleAudioProcessing(blob);
+      };
+
+      mediaRecorder.current.start(); 
+      setIsRecording(true);
+
+    } catch (err) { 
+      console.error(err);
+      alert("Mic error: Please check permissions or hardware."); 
+    }
+  } else {
+    if (mediaRecorder.current && mediaRecorder.current.state !== "inactive") {
+      mediaRecorder.current.stop();
+    }
+    setIsRecording(false);
+  }
+};
+   const fetchHistory = async () => {
+  try {
+    // We add ?email= to the URL so the backend knows which user is logged in
+    const res = await axios.get(`${API_BASE_URL}/api/history?email=${email}`);
+    setHistory(res.data);
+  } catch (e) { console.error(e); }
+};
 
   const deleteItem = async (id) => {
     if (!window.confirm("Delete record?")) return;
@@ -137,7 +137,7 @@ export default function App() {
     await axios.delete(`${API_BASE_URL}/api/history?email=${email}`);
     setHistory([]);
   };
-    
+   
   const downloadTxt = () => {
     const element = document.createElement("a");
     const file = new Blob([transcript], {type: 'text/plain'});
@@ -146,8 +146,7 @@ export default function App() {
     document.body.appendChild(element);
     element.click();
   };
-
-  const downloadHistoryItem = (text, date) => {
+    const downloadHistoryItem = (text, date) => {
     const element = document.createElement("a");
     const file = new Blob([text], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
@@ -155,18 +154,20 @@ export default function App() {
     element.download = `transcript-${date.replace(/\//g, '-')}.txt`;
     document.body.appendChild(element);
     element.click();
-  };
+    };
+
 
   if (!isLoggedIn) {
     return (
+    
       <div className="h-screen w-full flex items-center justify-center bg-[#05070a] p-4">
         <div className="neon-card pt-16 pb-12 px-10 rounded-[2.5rem] w-full max-w-[380px] text-center border border-white/5 shadow-2xl bg-[#0d1117]">
           
           <div className="flex justify-center items-center gap-2 h-14 mb-8 mt-4">
             <style>{`
-              @keyframes true-wave {
-                0%, 100% { transform: scaleY(0.4); opacity: 0.5; } 
-                50% { transform: scaleY(1.5); opacity: 1; }
+              @keyframes natural-wave {
+                0%, 100% { transform: scaleY(0.5); opacity: 0.5; } 
+                50% { transform: scaleY(1.4); opacity: 1; }
               }
             `}</style>
 
@@ -174,7 +175,12 @@ export default function App() {
               <div 
                 key={i} 
                 className={`w-1.5 rounded-full ${color} shadow-sm shadow-cyan-500/20`}
-                style={{ height: '24px', animation: 'true-wave 1.5s ease-in-out infinite', animationDelay: `${i * 0.2}s`, transformOrigin: 'center' }}
+                style={{ 
+                  height: '24px', 
+                  animation: 'natural-wave 3s ease-in-out infinite', 
+                  animationDelay: `${i * 0.25}s`, 
+                  transformOrigin: 'center' 
+                }}
               ></div>
             ))}
           </div>
@@ -202,30 +208,34 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#05070a] flex flex-col">
+    <div className="min-h-screen bg-[#05070a] flex flex-col text-white">
       {/* Navbar Fixed at Top */}
       <nav className="h-16 px-10 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#05070a] z-50">
         <span className="text-cyan-400 text-base font-bold tracking-[0.25em] opacity-90 italic">Real-time speech intelligence at your fingertips.</span>   
         <div className="flex gap-4">
           <button onClick={() => setShowHistory(!showHistory)} className="px-5 py-2 rounded-lg bg-cyan-600 text-white text-[9px] font-black uppercase">History</button>
-          <button onClick={() => {setIsLoggedIn(false); setEmail(""); setPassword("");}} 
-                  className="px-5 py-2 rounded-lg border border-red-900/30 text-red-500 text-[9px] font-bold uppercase hover:bg-red-950/20"> Logout
-          </button>
+            <button onClick={() => {setIsLoggedIn(false); 
+                setEmail("");        
+                setPassword("");      
+                }} 
+                className="px-5 py-2 rounded-lg border border-red-900/30 text-red-500 text-[9px] font-bold uppercase hover:bg-red-950/20"> Logout
+            </button>
         </div>
       </nav>
 
-      {/* Main Container */}
+      {/* Main Container - Centered Content */}
       <div className="flex-1 flex flex-col items-center">
         
+        {/* CENTERED BOX */}
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)] w-full">
             <div className="w-full max-w-md bg-[#0d1117] border border-white/5 rounded-[2rem] p-8 flex flex-col items-center shadow-2xl">
             <h2 className="text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase mb-6">Audio Intelligence Lab</h2>
             
             <div className="flex items-center justify-center gap-2 h-14 mb-8">
               <style>{`
-                @keyframes natural-ripple {
+                @keyframes recording-pulse {
                   0%, 100% { transform: scaleY(0.4); }
-                  50% { transform: scaleY(1.8); }
+                  50% { transform: scaleY(2); }
                 }
               `}</style>
               
@@ -234,7 +244,12 @@ export default function App() {
                   <div 
                       key={i} 
                       className={`w-1.5 rounded-full shadow-sm ${ i % 2 === 0 ? 'bg-cyan-500 shadow-cyan-500/20' : 'bg-purple-500 shadow-purple-500/20' }`}
-                      style={{ height: '24px', animation: 'natural-ripple 1s ease-in-out infinite', animationDelay: `${i * 0.1}s`, transformOrigin: 'center' }}
+                      style={{ 
+                        height: '24px', 
+                        animation: 'recording-pulse 2.5s ease-in-out infinite', 
+                        animationDelay: `${i * 0.18}s`, 
+                        transformOrigin: 'center' 
+                      }}
                   ></div>
                   ))
               ) : (
@@ -253,7 +268,7 @@ export default function App() {
             <button onClick={toggleRecording} className={`w-full py-4 rounded-xl font-black text-[11px] tracking-[0.2em] transition-all shadow-lg ${isRecording ? 'bg-red-600 animate-pulse text-white' : 'bg-cyan-600 text-white hover:bg-cyan-500'}`}>
                 {isRecording ? "STOP RECORDING" : "LIVE RECORD"}
             </button>
-            
+
             <div className="mt-6">
                 <input 
                   type="file" 
@@ -272,7 +287,7 @@ export default function App() {
             </div>
         </div>
 
-        {/* History Grid Section */}
+        {/* --- History Grid Section --- */}
         {showHistory && (
           <div className="w-full max-w-6xl px-10 pb-20 animate-in fade-in slide-in-from-top-4 duration-700">
             <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
