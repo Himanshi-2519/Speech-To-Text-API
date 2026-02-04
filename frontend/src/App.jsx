@@ -19,7 +19,6 @@ export default function App() {
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    alert(`Attempting to login with: ${email}`);
     try {
       const endpoint = isSignup ? 'signup' : 'login';
       await axios.post(`${API_BASE_URL}/api/${endpoint}`, { email, password });
