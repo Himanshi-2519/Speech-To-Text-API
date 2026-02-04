@@ -159,26 +159,35 @@ export default function App() {
 
   if (!isLoggedIn) {
     return (
-    
       <div className="h-screen w-full flex items-center justify-center bg-[#05070a] p-4">
         <div className="neon-card pt-16 pb-12 px-10 rounded-[2.5rem] w-full max-w-[380px] text-center border border-white/5 shadow-2xl bg-[#0d1117]">
           
-          <div className="flex justify-center items-center gap-2 h-14 mb-8 mt-4">
+          <div className="flex justify-center items-center gap-1.5 h-16 mb-8 mt-4">
             <style>{`
-              @keyframes natural-wave {
-                0%, 100% { transform: scaleY(0.5); opacity: 0.5; } 
-                50% { transform: scaleY(1.4); opacity: 1; }
+              @keyframes video-wave {
+                0%, 100% { transform: scaleY(0.4); opacity: 0.5; } 
+                50% { transform: scaleY(1.5); opacity: 1; }
               }
             `}</style>
 
-            {[ "bg-cyan-500", "bg-blue-500", "bg-cyan-400", "bg-blue-400", "bg-cyan-600", "bg-blue-500", "bg-cyan-400", "bg-blue-600", "bg-cyan-500" ].map((color, i) => (
+            {[
+              { color: "bg-cyan-500", h: "15px" },
+              { color: "bg-blue-500", h: "25px" },
+              { color: "bg-cyan-400", h: "35px" },
+              { color: "bg-blue-400", h: "45px" },
+              { color: "bg-white",    h: "55px" }, // Center Bar
+              { color: "bg-blue-400", h: "45px" },
+              { color: "bg-cyan-400", h: "35px" },
+              { color: "bg-blue-500", h: "25px" },
+              { color: "bg-cyan-500", h: "15px" }
+            ].map((bar, i) => (
               <div 
                 key={i} 
-                className={`w-1.5 rounded-full ${color} shadow-sm shadow-cyan-500/20`}
+                className={`w-1.5 rounded-full ${bar.color}`}
                 style={{ 
-                  height: '24px', 
-                  animation: 'natural-wave 3s ease-in-out infinite', 
-                  animationDelay: `${i * 0.25}s`, 
+                  height: bar.h, 
+                  animation: 'video-wave 4s ease-in-out infinite', 
+                  animationDelay: `${i * 0.15}s`, 
                   transformOrigin: 'center' 
                 }}
               ></div>
@@ -209,7 +218,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#05070a] flex flex-col text-white">
-      {/* Navbar Fixed at Top */}
       <nav className="h-16 px-10 border-b border-white/5 flex items-center justify-between sticky top-0 bg-[#05070a] z-50">
         <span className="text-cyan-400 text-base font-bold tracking-[0.25em] opacity-90 italic">Real-time speech intelligence at your fingertips.</span>   
         <div className="flex gap-4">
@@ -223,31 +231,28 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Container - Centered Content */}
       <div className="flex-1 flex flex-col items-center">
-        
-        {/* CENTERED BOX */}
         <div className="flex items-center justify-center min-h-[calc(100vh-64px)] w-full">
             <div className="w-full max-w-md bg-[#0d1117] border border-white/5 rounded-[2rem] p-8 flex flex-col items-center shadow-2xl">
             <h2 className="text-[10px] font-bold tracking-[0.4em] text-slate-500 uppercase mb-6">Audio Intelligence Lab</h2>
             
-            <div className="flex items-center justify-center gap-2 h-14 mb-8">
+            <div className="flex items-center justify-center gap-1.5 h-16 mb-8">
               <style>{`
-                @keyframes recording-pulse {
+                @keyframes natural-ripple {
                   0%, 100% { transform: scaleY(0.4); }
-                  50% { transform: scaleY(2); }
+                  50% { transform: scaleY(1.8); }
                 }
               `}</style>
               
               {isRecording ? (
-                  [...Array(12)].map((_, i) => (
+                  [15, 25, 35, 45, 55, 65, 55, 45, 35, 25, 15].map((h, i) => (
                   <div 
                       key={i} 
-                      className={`w-1.5 rounded-full shadow-sm ${ i % 2 === 0 ? 'bg-cyan-500 shadow-cyan-500/20' : 'bg-purple-500 shadow-purple-500/20' }`}
+                      className={`w-1.5 rounded-full ${ i % 2 === 0 ? 'bg-cyan-500' : 'bg-purple-500' }`}
                       style={{ 
-                        height: '24px', 
-                        animation: 'recording-pulse 2.5s ease-in-out infinite', 
-                        animationDelay: `${i * 0.18}s`, 
+                        height: `${h}px`, 
+                        animation: 'natural-ripple 3.5s ease-in-out infinite', 
+                        animationDelay: `${i * 0.12}s`, 
                         transformOrigin: 'center' 
                       }}
                   ></div>
@@ -270,26 +275,16 @@ export default function App() {
             </button>
 
             <div className="mt-6">
-                <input 
-                  type="file" 
-                  accept="audio/*" 
-                  id="file-upload" 
-                  onChange={(e) => handleAudioProcessing(e.target.files[0])} 
-                  className="hidden" 
-                />
-                <label 
-                  htmlFor="file-upload" 
-                  className="text-sm text-slate-400 uppercase font-bold tracking-wider hover:text-cyan-400 cursor-pointer transition-colors flex items-center gap-2"
-                >
-                  <span>📁  Click to upload audio file</span>
+                <input type="file" accept="audio/*" id="file-upload" onChange={(e) => handleAudioProcessing(e.target.files[0])} className="hidden" />
+                <label htmlFor="file-upload" className="text-sm text-slate-400 uppercase font-bold tracking-wider hover:text-cyan-400 cursor-pointer flex items-center gap-2">
+                  <span>📁 Click to upload audio file</span>
                 </label>
             </div>
             </div>
         </div>
 
-        {/* --- History Grid Section --- */}
         {showHistory && (
-          <div className="w-full max-w-6xl px-10 pb-20 animate-in fade-in slide-in-from-top-4 duration-700">
+          <div className="w-full max-w-6xl px-10 pb-20">
             <div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
               <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-cyan-500">Transcription History</h2>
               <button onClick={clearAll} className="text-[9px] text-red-500 font-bold uppercase hover:text-red-400 tracking-widest">Clear All</button>
@@ -299,15 +294,13 @@ export default function App() {
               {history.map(item => (
                 <div key={item.id} className="p-6 rounded-2xl bg-[#0d1117] border border-white/5 flex flex-col justify-between hover:border-cyan-500/40 transition-all shadow-xl min-h-[150px]">
                   <p className="text-sm text-slate-300 italic leading-relaxed mb-6">"{item.text}"</p>
-
                     <div className="flex justify-between items-center pt-4 border-t border-white/5">
                       <span className="text-[8px] font-mono text-slate-600 uppercase">Created: {new Date(item.created_at).toLocaleDateString()}</span>
                     <div className="flex gap-3">
-                      <button onClick={() => downloadHistoryItem(item.text, new Date(item.created_at).toLocaleDateString())} className="text-[8px] text-cyan-500/70 hover:text-cyan-400 font-bold uppercase transition-all">
-                        Download </button>
-                      <button onClick={() => deleteItem(item.id)} className="text-[8px] text-red-500/50 hover:text-red-500 font-bold uppercase transition-all">
-                        Delete</button> </div></div>
-                        </div>
+                      <button onClick={() => downloadHistoryItem(item.text, new Date(item.created_at).toLocaleDateString())} className="text-[8px] text-cyan-500/70 hover:text-cyan-400 font-bold uppercase transition-all">Download</button>
+                      <button onClick={() => deleteItem(item.id)} className="text-[8px] text-red-500/50 hover:text-red-500 font-bold uppercase transition-all">Delete</button> 
+                    </div></div>
+                </div>
               ))}
               {history.length === 0 && (
                 <div className="col-span-full text-center py-10 opacity-20 text-xs uppercase tracking-widest italic">No history records found</div>
