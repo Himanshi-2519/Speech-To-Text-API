@@ -8,7 +8,9 @@ const axios = require('axios');
 
 
 const S_URL = process.env.SUPABASE_URL;
-const S_KEY = process.env.SUPABASE_KEY;
+const S_KEY = process.env.SUPABASE_ANON_KEY;
+
+//const S_KEY = process.env.SUPABASE_KEY;
 const D_KEY = process.env.DEEPGRAM_API_KEY;
 
 const app = express();
